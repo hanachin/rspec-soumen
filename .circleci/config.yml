@@ -8,10 +8,13 @@ executors:
 jobs:
   test:
     executor: ruby
+    parallelism: 2
     steps:
       - checkout
       - run: gem install rspec
-      - run: rspec --failure-exit-code=0
+      - run: |
+          TEST_FILES=$(circleci tests glob spec/**/*_spec.rb | circleci tests split)
+          rspec --failure-exit-code=0 -- $TEST_FILES
       - persist_to_workspace:
           root: .
           paths:
@@ -23,6 +26,10 @@ jobs:
       - attach_workspace:
           at: ~/project
       - run: gem install rspec
+      - run: |
+          head -2 spec/examples-0.txt > spec/examples.txt
+          tail -qn +3 $(ls spec/examples-*.txt) >> spec/examples.txt
+          mv spec/examples.txt spec/examples-0.txt
       - run: rspec --only-failures
 
 workflows:
